@@ -24,3 +24,9 @@ module Or =
         (parser2: Parser< ^i, ^o, ^e, ^c, ^p2 >)
         : Or< ^i, ^o, ^e, ^c, ^p1, ^p2 > =
         Or(parser1, parser2)
+
+    let inline por< ^i, ^o, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o, ^e, ^c, ^p1 > and Parser< ^i, ^o, ^e, ^c, ^p2 >>
+        (parser1: Parser< ^i, ^o, ^e, ^c, ^p1 >)
+        (parser2: Parser< ^i, ^o, ^e, ^c, ^p2 >)
+        : Or< ^i, ^o, ^e, ^c, ^p1, ^p2 > =
+        parser1 </> parser2
