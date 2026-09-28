@@ -33,7 +33,9 @@ module DynParse =
         )
     
     let inline asDyn<^i, ^o, ^e, ^c, ^p when Parser<^i, ^o, ^e, ^c, ^p>> ([<InlineIfLambda>] factory: unit -> ^p) =
+        let parser = ref ValueNone
         asDynImpl (fun () ->
-            let parser = factory()
-            DynParseDelegate(parse parser)
+            if parser.Value.IsNone then
+                parser.Value <- ValueSome(factory())
+            DynParseDelegate(parse parser.Value.Value)
         )
