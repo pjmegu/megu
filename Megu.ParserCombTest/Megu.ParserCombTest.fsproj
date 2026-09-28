@@ -10,6 +10,7 @@
     <Compile Include="Parser/Or.fs" />
     <Compile Include="Parser/Dyn.fs" />
     <Compile Include="Parser/Action.fs" />
+    <Compile Include="Parser/Then.fs" />
   </ItemGroup>
 
   <ItemGroup>
