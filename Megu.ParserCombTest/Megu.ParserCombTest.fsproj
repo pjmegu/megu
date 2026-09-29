@@ -11,6 +11,7 @@
     <Compile Include="Parser/Dyn.fs" />
     <Compile Include="Parser/Action.fs" />
     <Compile Include="Parser/Then.fs" />
+    <Compile Include="Parser/Many.fs" />
   </ItemGroup>
 
   <ItemGroup>
