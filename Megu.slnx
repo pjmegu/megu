@@ -1,5 +1,7 @@
 <Solution>
   <Project Path="Megu.App/Megu.App.fsproj" />
   <Project Path="Megu.Compiler/Megu.Compiler.fsproj" />
+  <Project Path="Megu.ParserComb/Megu.ParserComb.fsproj" />
+  <Project Path="Megu.ParserCombTest/Megu.ParserCombTest.fsproj" />
   <Project Path="Megu.Test/Megu.Test.fsproj" />
 </Solution>
