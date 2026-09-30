@@ -16,6 +16,9 @@ type StdCtx =
     {
         length: int
     }
+    
+    static member inline Create(input: System.ReadOnlySpan<^i>) : StdCtx =
+        { length = input.Length }
 
 // For PosCtx
 type StdCtx with
