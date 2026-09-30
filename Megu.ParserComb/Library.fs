@@ -2,9 +2,6 @@
 
 open System
 
-type Error< ^T when ^T: (static member emit: string -> ^T) and ^T: (static member emitWithPos: string -> int -> ^T)> =
-    ^T
-
 [<Struct; Runtime.CompilerServices.IsByRefLike>]
 type ParseResult< ^i, ^o, ^e> =
     | Success of 'o * 'i ReadOnlySpan

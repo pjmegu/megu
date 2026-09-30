@@ -1,9 +1,28 @@
 namespace Megu.ParserComb
 
 [<Struct>]
+type ErrorInput =
+    {
+        msg: string option
+        pos: int option
+    }
+
+type Error< ^T when ^T: (static member emit: ErrorInput -> ^T)> =
+    ^T
+
+[<Struct>]
+type EmptyError =
+    | EmptyError
+
+    static member emit(_: ErrorInput) : EmptyError = EmptyError
+
+[<Struct>]
 type StdError =
     | StdError of string
 
-    static member emit(message: string) : StdError = StdError message
-    static member emitWithPos(message: string, pos: int) : StdError =
-        StdError (sprintf "%s at position %d" message pos)
+    static member emit(input: ErrorInput) : StdError =
+        match input.msg, input.pos with
+        | Some msg, Some pos -> StdError(sprintf "%s at position %d" msg pos)
+        | Some msg, None -> StdError msg
+        | None, Some pos -> StdError(sprintf "Error at position %d" pos)
+        | None, None -> StdError "Unknown error"
