@@ -2,31 +2,31 @@ namespace Megu.ParserComb
 
 open System
 
-type DynParseDelegate<'i, 'o, 'e, 'c> =
-    delegate of
-        ReadOnlySpan<'i> * 'c
-        -> ParseResult<'i, 'o, 'e>
-
-type DynParser<'i, 'o, 'e, 'c> =
-    private
-    | DynParser of DynParseDelegate<'i, 'o, 'e, 'c>
-
-    member this.Parse(
-        input: ReadOnlySpan<'i>,
-        ctx: 'c
-    ) : ParseResult<'i, 'o, 'e> =
-
-        let (DynParser parser) = this
-        parser.Invoke(input, ctx)
-
 [<AutoOpen>]
-module DynParse =
-    let asDynImpl
-        (factory: unit -> DynParseDelegate<'i, 'o, 'e, 'c>)
-        : DynParser<'i, 'o, 'e, 'c> =
+module Dyn =
+    type DynDelegate<'i, 'o, 'e, 'c> =
+        delegate of
+            ReadOnlySpan<'i> * 'c
+            -> ParseResult<'i, 'o, 'e>
+    
+    type Dyn<'i, 'o, 'e, 'c> =
+        private
+        | Dyn of DynDelegate<'i, 'o, 'e, 'c>
+    
+        member this.Parse(
+            input: ReadOnlySpan<'i>,
+            ctx: 'c
+        ) : ParseResult<'i, 'o, 'e> =
+    
+            let (Dyn parser) = this
+            parser.Invoke(input, ctx)
 
-        DynParser(
-            DynParseDelegate(fun input ctx ->
+    let asDynImpl
+        (factory: unit -> DynDelegate<'i, 'o, 'e, 'c>)
+        : Dyn<'i, 'o, 'e, 'c> =
+
+        Dyn(
+            DynDelegate(fun input ctx ->
                 let parser = factory()
                 parser.Invoke(input, ctx)
             )
@@ -37,5 +37,5 @@ module DynParse =
         asDynImpl (fun () ->
             if parser.Value.IsNone then
                 parser.Value <- ValueSome(factory())
-            DynParseDelegate(parse parser.Value.Value)
+            DynDelegate(parse parser.Value.Value)
         )
