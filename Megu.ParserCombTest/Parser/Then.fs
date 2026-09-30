@@ -12,12 +12,12 @@ let ``Then parser should parse two parsers in sequence`` () =
     let combinedParser = parser1 .>>. parser2
 
     let input = MemoryExtensions.AsSpan "abc"
-    match parse combinedParser input EmptyCtx with
+    match parse combinedParser input (StdCtx.Create input) with
     | Success((value1, value2), remaining) ->
         Assert.Equal('a', value1)
         Assert.Equal('b', value2)
         Assert.Equal("c", remaining.ToString())
-    | Failure(error: StdError) -> Assert.True(false, $"Unexpected failure: {error}")
+    | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")
 
 [<Fact>]
 let ``ThenIgnore parser should parse two parsers in sequence and ignore the second result`` ()=
@@ -26,11 +26,11 @@ let ``ThenIgnore parser should parse two parsers in sequence and ignore the seco
     let combinedParser = parser1 .>> parser2
 
     let input = MemoryExtensions.AsSpan "abc"
-    match parse combinedParser input EmptyCtx with
+    match parse combinedParser input (StdCtx.Create input) with
     | Success(value1, remaining) ->
         Assert.Equal('a', value1)
         Assert.Equal("c", remaining.ToString())
-    | Failure(error: StdError) -> Assert.True(false, $"Unexpected failure: {error}")
+    | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")
 
 [<Fact>]
 let ``IgnoreThen parser should parse two parsers in sequence and ignore the first result`` ()=
@@ -39,8 +39,8 @@ let ``IgnoreThen parser should parse two parsers in sequence and ignore the firs
     let combinedParser = parser1 >>. parser2
 
     let input = MemoryExtensions.AsSpan "abc"
-    match parse combinedParser input EmptyCtx with
+    match parse combinedParser input (StdCtx.Create input) with
     | Success(value2, remaining) ->
         Assert.Equal('b', value2)
         Assert.Equal("c", remaining.ToString())
-    | Failure(error: StdError) -> Assert.True(false, $"Unexpected failure: {error}")
+    | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")

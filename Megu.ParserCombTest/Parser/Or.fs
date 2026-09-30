@@ -10,8 +10,8 @@ let ``or parse`` () =
     let input = MemoryExtensions.AsSpan "abc"
     let parser = just 'x' </> just 'a'
 
-    match parse parser input EmptyCtx with
+    match parse parser input (StdCtx.Create input) with
     | Success(value, remaining) ->
         Assert.Equal('a', value)
         Assert.Equal("bc", remaining.ToString())
-    | Failure(error: StdError) -> Assert.True(false, $"Unexpected failure: {error}")
+    | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")
