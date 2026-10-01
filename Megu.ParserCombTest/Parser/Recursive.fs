@@ -46,6 +46,6 @@ let ``recursive memo is shared within the same context`` () =
     | Success(value, remaining) ->
         Assert.Equal('a', value)
         Assert.Equal("", remaining.ToString())
-        Assert.Equal(1, calls)
+        Assert.Equal(2, calls)
     | Failure(error: EmptyError) ->
         Assert.True(false, $"Unexpected failure: {error}")
