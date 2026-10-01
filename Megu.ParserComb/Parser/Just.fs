@@ -19,7 +19,7 @@ module Just =
                 let msg = sprintf "Expected '%A', but got '%A'" value (if input.Length > 0 then input[0] else Unchecked.defaultof< ^i>)
                 let pos = ctx.GetPos input
                 let error = { msg = Some msg; pos = Some pos }
-                Failure(^e: (static member emit: ErrorInput -> ^e) error)
+                Failure(emitError error)
 
     let inline just< ^i, ^e, ^c when ^i: equality> (value: ^i) : Just< ^i > = Just value
 

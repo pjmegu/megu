@@ -10,6 +10,11 @@ type ErrorInput =
 type Error< ^T when ^T: (static member emit: ErrorInput -> ^T)> =
     ^T
 
+[<AutoOpen>]
+module Error =
+    let inline emitError< ^T when Error<^T>> input : Error< ^T> =
+        (^T: (static member emit: ErrorInput -> ^T) input)
+
 [<Struct>]
 type EmptyError =
     | EmptyError
