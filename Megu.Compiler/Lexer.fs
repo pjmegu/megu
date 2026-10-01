@@ -17,10 +17,10 @@ let rec tokenize chars =
     | '=' :: rest -> Equal :: tokenize rest
     | c :: rest when System.Char.IsLetter(c) ->
         let identifier, remaining = parseIdentifier (c :: rest)
+
         match identifier with
         | "def" -> Def :: tokenize remaining
         | _ -> Identifier identifier :: tokenize remaining
     | _ :: rest -> tokenize rest
 
-let lex input =
-    tokenize (List.ofSeq input)
+let lex input = tokenize (List.ofSeq input)

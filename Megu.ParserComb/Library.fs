@@ -12,6 +12,7 @@ type Parser< ^i, ^o, ^e, ^c, ^T when ^T: (member Parse: ^i ReadOnlySpan * ^c -> 
 [<AutoOpen>]
 module Parser =
     let inline (-->) v1 f = f v1
+
     let inline parse< ^p, ^i, ^o, ^e, ^c when Parser< ^i, ^o, ^e, ^c, ^p >>
         (parser: ^p)
         (input: ^i ReadOnlySpan)

@@ -16,7 +16,15 @@ module Just =
             if input.Length > 0 && input[0] = value then
                 Success(value, input.Slice 1)
             else
-                let msg = sprintf "Expected '%A', but got '%A'" value (if input.Length > 0 then input[0] else Unchecked.defaultof< ^i>)
+                let msg =
+                    sprintf
+                        "Expected '%A', but got '%A'"
+                        value
+                        (if input.Length > 0 then
+                             input[0]
+                         else
+                             Unchecked.defaultof< ^i>)
+
                 let pos = ctx.GetPos input
                 let error = { msg = Some msg; pos = Some pos }
                 Failure(emitError error)
@@ -26,7 +34,7 @@ module Just =
 [<AutoOpen>]
 module Take =
     [<Struct>]
-    type Take< ^i, ^o > =
+    type Take< ^i, ^o> =
         | Take of (^i -> ^o option)
 
         member inline this.Parse< ^e, ^c when Error< ^e > and PosCtx< ^i, ^c >>
@@ -36,6 +44,7 @@ module Take =
 
             if input.Length > 0 then
                 let value = f input[0]
+
                 match value with
                 | Some v -> Success(v, input.Slice 1)
                 | None ->
@@ -48,5 +57,5 @@ module Take =
                 let pos = ctx.GetPos input
                 let error = { msg = Some msg; pos = Some pos }
                 Failure(emitError error)
-    
-    let inline take< ^i, ^o > (f: ^i -> ^o option) : Take< ^i, ^o > = Take f
+
+    let inline take< ^i, ^o> (f: ^i -> ^o option) : Take< ^i, ^o > = Take f

@@ -13,8 +13,7 @@ let ``recursive parse`` () =
         recursive (fun () ->
             let a = expr .>> just '+' .>> expr
             let b = just 'a'
-            a </> b 
-        )
+            a </> b)
 
     match parse expr input (StdRecursiveCtx.Create input) with
     | Success(value, remaining) ->
@@ -30,7 +29,7 @@ let ``recursive failure memo is shared within the same context`` () =
     let parser2 =
         RecursiveDelegate<char, char, EmptyError, StdRecursiveCtx<EmptyError>>(fun input _ ->
             calls <- calls + 1
-            Failure (emitError { msg = Some "memo"; pos = Some 0 }))
+            Failure(emitError { msg = Some "memo"; pos = Some 0 }))
 
     let parser1 =
         RecursiveDelegate<char, char, EmptyError, StdRecursiveCtx<EmptyError>>(fun input ctx ->
@@ -39,8 +38,7 @@ let ``recursive failure memo is shared within the same context`` () =
                 match ctx.ParseRecursive(parser2, input) with
                 | Failure _ -> Success('a', input.Slice 0)
                 | Success _ -> Success('a', input.Slice 0)
-            | Success _ ->
-                Success('a', input.Slice 0))
+            | Success _ -> Success('a', input.Slice 0))
 
     let ctx = StdRecursiveCtx<EmptyError>.Create input
 
@@ -49,5 +47,4 @@ let ``recursive failure memo is shared within the same context`` () =
         Assert.Equal('a', value)
         Assert.Equal("a", remaining.ToString())
         Assert.Equal(1, calls)
-    | Failure(error: EmptyError) ->
-        Assert.True(false, $"Unexpected failure: {error}")
+    | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")

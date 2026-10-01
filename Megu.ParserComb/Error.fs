@@ -1,18 +1,13 @@
 namespace Megu.ParserComb
 
 [<Struct>]
-type ErrorInput =
-    {
-        msg: string option
-        pos: int option
-    }
+type ErrorInput = { msg: string option; pos: int option }
 
-type Error< ^T when ^T: (static member emit: ErrorInput -> ^T)> =
-    ^T
+type Error< ^T when ^T: (static member emit: ErrorInput -> ^T)> = ^T
 
 [<AutoOpen>]
 module Error =
-    let inline emitError< ^T when Error<^T>> input : Error< ^T> =
+    let inline emitError< ^T when Error< ^T >> input : Error< ^T > =
         (^T: (static member emit: ErrorInput -> ^T) input)
 
 [<Struct>]

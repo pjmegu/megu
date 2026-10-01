@@ -19,8 +19,9 @@ let ``just parse`` () =
 [<Fact>]
 let ``take parse`` () =
     let input = MemoryExtensions.AsSpan "abc"
-    let parser = 
-        take (fun c -> 
+
+    let parser =
+        take (fun c ->
             match c with
             | 'a' -> Some 'a'
             | 'b' -> Some 'b'
@@ -31,4 +32,3 @@ let ``take parse`` () =
         Assert.Equal('a', value)
         Assert.Equal("bc", remaining.ToString())
     | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")
-

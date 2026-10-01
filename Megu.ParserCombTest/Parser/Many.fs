@@ -12,7 +12,7 @@ let ``many0 should parse zero or more occurrences`` () =
 
     match parse parser input (StdCtx.Create input) with
     | Success(value, remaining) ->
-        Assert.Equal<char>(['a'; 'a'; 'a'], value)
+        Assert.Equal<char>([ 'a'; 'a'; 'a' ], value)
         Assert.Equal("bc", remaining.ToString())
     | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")
 
@@ -34,7 +34,7 @@ let ``many1 should parse one or more occurrences`` () =
 
     match parse parser input (StdCtx.Create input) with
     | Success(value, remaining) ->
-        Assert.Equal<char>(['a'; 'a'; 'a'], value)
+        Assert.Equal<char>([ 'a'; 'a'; 'a' ], value)
         Assert.Equal("bc", remaining.ToString())
     | Failure(error: EmptyError) -> Assert.True(false, $"Unexpected failure: {error}")
 
@@ -44,6 +44,5 @@ let ``many1 should fail on zero occurrences`` () =
     let input = MemoryExtensions.AsSpan "bc"
 
     match parse parser input (StdCtx.Create input) with
-    | Success(value, remaining) ->
-        Assert.True(false, $"Unexpected success: {value}, remaining: {remaining.ToString()}")
+    | Success(value, remaining) -> Assert.True(false, $"Unexpected success: {value}, remaining: {remaining.ToString()}")
     | Failure(error: EmptyError) -> Assert.True(true, $"Expected failure: {error}")
