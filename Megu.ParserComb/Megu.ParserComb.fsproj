@@ -18,6 +18,7 @@
     <Compile Include="Parser/Action.fs" />
     <Compile Include="Parser/Then.fs" />
     <Compile Include="Parser/Many.fs" />
+    <Compile Include="Parser/Recover.fs" />
   </ItemGroup>
 
 </Project>

@@ -13,6 +13,7 @@
     <Compile Include="Parser/Then.fs" />
     <Compile Include="Parser/Many.fs" />
     <Compile Include="Parser/Recursive.fs" />
+    <Compile Include="Parser/Recover.fs" />
   </ItemGroup>
 
   <ItemGroup>
