@@ -25,7 +25,6 @@ type StdCtx with
     member inline this.GetPos(input: System.ReadOnlySpan<^i>) : int =
         this.length - input.Length
 
-[<Struct>]
 type StdRecursiveCtx<^e when Error<^e>> =
     {
         length: int
