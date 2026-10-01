@@ -22,5 +22,3 @@ module Just =
                 Failure(emitError error)
 
     let inline just< ^i, ^e, ^c when ^i: equality> (value: ^i) : Just< ^i > = Just value
-
-

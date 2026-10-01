@@ -8,8 +8,8 @@
   <ItemGroup>
     <Compile Include="Library.fs" />
     <Compile Include="Error.fs" />
+    <!-- for squirrel system --> <Compile Include="Parser/Recursive.fs" />
     <Compile Include="Ctx.fs" />
-    
     
     <!-- Parsers -->
     <Compile Include="Parser/Just.fs" />
