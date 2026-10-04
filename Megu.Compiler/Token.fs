@@ -1,6 +1,11 @@
 module Megu.Compiler.Token
 
 type Token =
+    // keywords
     | Def
+    // literals
     | Identifier of string
-    | Equal
+    // signs
+    | Backslash // \
+    | LBracket // [
+    | RBracket // ]

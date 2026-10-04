@@ -14,8 +14,16 @@ let parseIdentifier chars =
 let rec tokenize chars =
     match chars with
     | [] -> []
-    | '=' :: rest -> Equal :: tokenize rest
-    | c :: rest when System.Char.IsLetter(c) ->
+    // ignores
+    | ' ' :: rest -> tokenize rest
+    | '\t' :: rest -> tokenize rest
+    | '\n' :: rest -> tokenize rest
+    // signs
+    | '\\' :: rest -> Backslash :: tokenize rest
+    | '[' :: rest -> LBracket :: tokenize rest
+    | ']' :: rest -> RBracket :: tokenize rest
+    // keywords and identifiers
+    | c :: rest when System.Char.IsLetter c ->
         let identifier, remaining = parseIdentifier (c :: rest)
 
         match identifier with
@@ -23,4 +31,4 @@ let rec tokenize chars =
         | _ -> Identifier identifier :: tokenize remaining
     | _ :: rest -> tokenize rest
 
-let lex input = tokenize (List.ofSeq input)
+let lex input = tokenize input
