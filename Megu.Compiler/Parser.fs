@@ -25,12 +25,7 @@ let parse tokens =
 
     let def =
         just Def *>. ident .*>. expr
-        --> action (fun (name, _) ->
-            Define
-                {
-                    Name = name
-                    Value = Lambda { Body = Block [] }
-                })
+        --> action (fun (name, expr) -> Define { Name = name; Value = expr })
 
     let root = many0 def --> action (fun defs -> Root defs)
 
