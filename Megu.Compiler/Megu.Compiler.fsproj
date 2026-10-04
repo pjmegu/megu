@@ -11,6 +11,7 @@
     <Compile Include="AST.fs" />
     <Compile Include="Lexer.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="GenC.fs" />
   </ItemGroup>
 
   <ItemGroup>
