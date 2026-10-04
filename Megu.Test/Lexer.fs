@@ -13,6 +13,7 @@ let ``define test`` () =
             Token.Def
             Token.Identifier "x"
             Token.Backslash
+            Token.Backslash
             Token.LBracket
             Token.RBracket
         ]
