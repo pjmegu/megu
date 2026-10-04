@@ -9,7 +9,7 @@ open Megu.ParserComb
 let ``Then parser should parse two parsers in sequence`` () =
     let parser1 = just 'a'
     let parser2 = just 'b'
-    let combinedParser = parser1 .>>. parser2
+    let combinedParser = parser1 .*>. parser2
 
     let input = MemoryExtensions.AsSpan "abc"
 
@@ -24,7 +24,7 @@ let ``Then parser should parse two parsers in sequence`` () =
 let ``ThenIgnore parser should parse two parsers in sequence and ignore the second result`` () =
     let parser1 = just 'a'
     let parser2 = just 'b'
-    let combinedParser = parser1 .>> parser2
+    let combinedParser = parser1 .*> parser2
 
     let input = MemoryExtensions.AsSpan "abc"
 
@@ -38,7 +38,7 @@ let ``ThenIgnore parser should parse two parsers in sequence and ignore the seco
 let ``IgnoreThen parser should parse two parsers in sequence and ignore the first result`` () =
     let parser1 = just 'a'
     let parser2 = just 'b'
-    let combinedParser = parser1 >>. parser2
+    let combinedParser = parser1 *>. parser2
 
     let input = MemoryExtensions.AsSpan "abc"
 

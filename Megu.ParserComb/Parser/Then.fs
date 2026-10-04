@@ -19,22 +19,25 @@ module Then =
                 | Failure error -> Failure error
             | Failure error -> Failure error
 
-    let inline (.>>.) < ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
+    let inline (.*>.)< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
         (parser1: Parser< ^i, ^o1, ^e, ^c, ^p1 >)
         (parser2: Parser< ^i, ^o2, ^e, ^c, ^p2 >)
         : Then< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 > =
         Then(parser1, parser2)
 
-    let inline pthen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
+    let inline pthen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
         (parser1: Parser< ^i, ^o1, ^e, ^c, ^p1 >)
         (parser2: Parser< ^i, ^o2, ^e, ^c, ^p2 >)
         : Then< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 > =
-        parser1 .>>. parser2
+        parser1 .*>. parser2
 
 [<AutoOpen>]
 module ThenIgnore =
     [<Struct>]
-    type ThenIgnore< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >> =
+    type ThenIgnore< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >> =
         | ThenIgnore of (^p1 * ^p2)
 
         member inline this.Parse(input: ^i ReadOnlySpan, ctx: ^c) : ParseResult< ^i, ^o1, ^e > =
@@ -47,22 +50,25 @@ module ThenIgnore =
                 | Failure error -> Failure error
             | Failure error -> Failure error
 
-    let inline (.>> ) < ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
+    let inline (.*>)< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
         (parser1: Parser< ^i, ^o1, ^e, ^c, ^p1 >)
         (parser2: Parser< ^i, ^o2, ^e, ^c, ^p2 >)
         : ThenIgnore< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 > =
         ThenIgnore(parser1, parser2)
-    
-    let inline pthenIgnore< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
+
+    let inline pthenIgnore< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
         (parser1: Parser< ^i, ^o1, ^e, ^c, ^p1 >)
         (parser2: Parser< ^i, ^o2, ^e, ^c, ^p2 >)
         : ThenIgnore< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 > =
-        parser1 .>> parser2
+        parser1 .*> parser2
 
 [<AutoOpen>]
 module IgnoreThen =
     [<Struct>]
-    type IgnoreThen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >> =
+    type IgnoreThen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >> =
         | IgnoreThen of (^p1 * ^p2)
 
         member inline this.Parse(input: ^i ReadOnlySpan, ctx: ^c) : ParseResult< ^i, ^o2, ^e > =
@@ -74,15 +80,17 @@ module IgnoreThen =
                 | Success(value2, remaining) -> Success(value2, remaining.Slice 0)
                 | Failure error -> Failure error
             | Failure error -> Failure error
-    
-    let inline (>>.) < ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
+
+    let inline ( *>. )< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
         (parser1: Parser< ^i, ^o1, ^e, ^c, ^p1 >)
         (parser2: Parser< ^i, ^o2, ^e, ^c, ^p2 >)
         : IgnoreThen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 > =
         IgnoreThen(parser1, parser2)
 
-    let inline pignoreThen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
+    let inline pignoreThen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2
+        when Parser< ^i, ^o1, ^e, ^c, ^p1 > and Parser< ^i, ^o2, ^e, ^c, ^p2 >>
         (parser1: Parser< ^i, ^o1, ^e, ^c, ^p1 >)
         (parser2: Parser< ^i, ^o2, ^e, ^c, ^p2 >)
         : IgnoreThen< ^i, ^o1, ^o2, ^e, ^c, ^p1, ^p2 > =
-        parser1 >>. parser2
+        parser1 *>. parser2

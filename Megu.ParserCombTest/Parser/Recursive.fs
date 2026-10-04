@@ -11,7 +11,7 @@ let ``recursive parse`` () =
     #nowarn "40"
     let rec expr =
         recursive (fun () ->
-            let a = expr .>> just '+' .>> expr
+            let a = expr .*> just '+' .*> expr
             let b = just 'a'
             a </> b)
 
