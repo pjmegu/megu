@@ -13,25 +13,26 @@ let parse tokens =
             | Identifier name -> Some name
             | _ -> None)
 
-    let rec expr =
-        recursive (fun _ ->
-            lambda
-            </> block
-        )
+    let rec expr = recursive (fun _ -> lambda </> block)
+
     and lambda =
         just Backslash .*> just Backslash *>. expr
         --> action (fun body -> Lambda { Body = body })
+
     and block =
         just LBracket *>. many0 expr .*> just RBracket
         --> action (fun body -> Block body)
 
     let def =
         just Def *>. ident .*>. expr
-        --> action (fun (name, _) -> Define { Name = name; Value = Lambda { Body = Block [] } })
-    
-    let root =
-        many0 def
-        --> action (fun defs -> Root defs)
+        --> action (fun (name, _) ->
+            Define
+                {
+                    Name = name
+                    Value = Lambda { Body = Block [] }
+                })
+
+    let root = many0 def --> action (fun defs -> Root defs)
 
     let parser = root
     let ctx = StdRecursiveCtx<StdError>.Create tokens

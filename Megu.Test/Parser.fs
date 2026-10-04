@@ -16,8 +16,9 @@ let ``define test`` () =
             Token.Backslash
             Token.LBracket
             Token.RBracket
-        ] |> Array.ofList
-    
+        ]
+        |> Array.ofList
+
     let span = ReadOnlySpan tokens
 
     let expected =

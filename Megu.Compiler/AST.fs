@@ -2,6 +2,7 @@
 
 [<Struct>]
 type Define = { Name: string; Value: Node }
+
 and [<Struct>] Lambda = { Body: Node }
 
 and Node =
