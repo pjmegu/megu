@@ -15,11 +15,15 @@ let parse tokens =
 
     let rec expr =
         recursive (fun _ ->
-            just Backslash .*> just Backslash *>. expr
-            --> action (fun body -> Lambda { Body = body })
-            </> just LBracket *>. many0 expr .*> just RBracket
-                --> action (fun body -> Block body)
+            lambda
+            </> block
         )
+    and lambda =
+        just Backslash .*> just Backslash *>. expr
+        --> action (fun body -> Lambda { Body = body })
+    and block =
+        just LBracket *>. many0 expr .*> just RBracket
+        --> action (fun body -> Block body)
 
     let def =
         just Def *>. ident .*>. expr
