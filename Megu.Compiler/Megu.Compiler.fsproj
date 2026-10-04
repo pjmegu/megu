@@ -13,4 +13,8 @@
     <Compile Include="Parser.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Megu.ParserComb\Megu.ParserComb.fsproj" />
+  </ItemGroup>
+
 </Project>

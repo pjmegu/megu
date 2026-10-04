@@ -16,15 +16,7 @@ module Just =
             if input.Length > 0 && input[0] = value then
                 Success(value, input.Slice 1)
             else
-                let msg =
-                    sprintf
-                        "Expected '%A', but got '%A'"
-                        value
-                        (if input.Length > 0 then
-                             input[0]
-                         else
-                             Unchecked.defaultof< ^i>)
-
+                let msg = sprintf "Expected '%A'" value
                 let pos = ctx.GetPos input
                 let error = { msg = Some msg; pos = Some pos }
                 Failure(emitError error)

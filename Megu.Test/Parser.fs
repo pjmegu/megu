@@ -7,8 +7,18 @@ open Megu.Compiler
 
 [<Fact>]
 let ``define test`` () =
-    // def define = <missing>
-    let tokens = [ Token.Def; Token.Identifier "define"; Token.Equal ]
+    // def define \\ []
+    let tokens =
+        [
+            Token.Def
+            Token.Identifier "define"
+            Token.Backslash
+            Token.Backslash
+            Token.LBracket
+            Token.RBracket
+        ] |> Array.ofList
+    
+    let span = ReadOnlySpan tokens
 
     let expected =
         AST.Root
@@ -16,9 +26,9 @@ let ``define test`` () =
                 AST.Define
                     {
                         Name = "define"
-                        Value = AST.Missing "expr"
+                        Value = AST.Lambda { Body = AST.Block [] }
                     }
             ]
 
-    let ast: AST.Node = Parser.parse tokens
+    let ast = Parser.parse span
     Assert.Equal(expected, ast)
