@@ -1,7 +1,8 @@
 ﻿module Megu.Compiler.AST
 
+[<Struct>]
 type Define = { Name: string; Value: Node }
-and Lambda = { Body: Node }
+and [<Struct>] Lambda = { Body: Node }
 
 and Node =
     | Root of Node list
