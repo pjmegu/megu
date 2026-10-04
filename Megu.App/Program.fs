@@ -2,12 +2,22 @@
 
 open System.CommandLine
 open System.IO
+open System
 
-let exec script = printfn "Executing script: %s" script
+let exec script =
+    eprintfn "Executing script: %s" script
+    let token = Compiler.Lexer.lex (List.ofSeq script)
+    eprintfn "Tokens: %A" token
+    let ast = Compiler.Parser.parse (ReadOnlySpan (Array.ofList token))
+    eprintfn "AST: %A" ast
+    let genc = Compiler.GenC.genc ast
+    let gencstr = Compiler.GenC.genCString genc
+    eprintfn "Generated C code: %s" gencstr
+    printfn "%s" gencstr
 
 [<EntryPoint>]
 let main args =
-    let rootCommand = RootCommand("Megu Compiler")
+    let rootCommand = RootCommand "Megu Compiler"
 
     let inputPath =
         Option<string>("--input", [| "-i" |])
