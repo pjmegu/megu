@@ -5,7 +5,11 @@ type Token =
     | Def
     // literals
     | Identifier of string
+    | BuiltinIdentifier of string
+    | String of string
     // signs
     | Backslash // \
     | LBracket // [
     | RBracket // ]
+    | LParen // (
+    | RParen // )

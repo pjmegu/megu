@@ -2,6 +2,16 @@ module Megu.Compiler.Lexer
 
 open Megu.Compiler.Token
 
+let parseString chars =
+    let rec loop acc chars =
+        match chars with
+        | [] -> failwith "Unterminated string literal"
+        | '\\' :: '"' :: rest -> loop ('"' :: acc) rest
+        | '"' :: rest -> System.String(List.toArray (List.rev acc)), rest
+        | c :: rest -> loop (c :: acc) rest
+
+    loop [] chars
+
 let parseIdentifier chars =
     let rec loop acc chars =
         match chars with
@@ -22,7 +32,15 @@ let rec tokenize chars =
     | '\\' :: rest -> Backslash :: tokenize rest
     | '[' :: rest -> LBracket :: tokenize rest
     | ']' :: rest -> RBracket :: tokenize rest
+    | '(' :: rest -> LParen :: tokenize rest
+    | ')' :: rest -> RParen :: tokenize rest
     // keywords and identifiers
+    | '"' :: rest ->
+        let str, remaining = parseString rest
+        String str :: tokenize remaining
+    | '@' :: c :: rest when System.Char.IsLetter c ->
+        let identifier, remaining = parseIdentifier (c :: rest)
+        BuiltinIdentifier identifier :: tokenize remaining
     | c :: rest when System.Char.IsLetter c ->
         let identifier, remaining = parseIdentifier (c :: rest)
 
