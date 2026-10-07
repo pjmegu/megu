@@ -1,1 +1,1 @@
-# megu-fsharp
+# megu
