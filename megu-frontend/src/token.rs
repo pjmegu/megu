@@ -1,7 +1,30 @@
 use logos::{Lexer, Logos};
 
 pub fn lex(source: &[u8]) -> Result<Vec<Token<'_>>, ()> {
-    Token::lexer(source).collect()
+    // check leading trivia
+    let mut leading_trivia_end = 0;
+    for b in source.iter() {
+        match b {
+            b' ' | b'\t' | b'\n' | b'\r' => {
+                leading_trivia_end += 1;
+            }
+            _ => break,
+        }
+    }
+
+    let leading_trivia = &source[..leading_trivia_end];
+
+    let extra = LexerExtra {
+        leading_trivia,
+    };
+    
+    let mut lexer = Token::lexer_with_extras(&source[leading_trivia_end..], extra);
+    let tokens: Result<Vec<_>, _> = lexer.by_ref().collect();
+    tokens.map(|mut token| {
+        let rest = lexer.extras.leading_trivia;
+        token.push(Token::Rest(rest));
+        token
+    })
 }
 
 #[derive(Logos, Debug, PartialEq, Eq, Clone)]
@@ -33,6 +56,9 @@ pub enum Token<'source> {
     Comma(TokenInner<'source>),
     #[token("\\", token_inner)]
     Backslash(TokenInner<'source>),
+
+    // for rest leading trivia
+    Rest(&'source [u8]),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,36 +84,18 @@ impl<'source> TokenInner<'source> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
 pub struct LexerExtra<'source> {
-    trailing_trivia: Option<&'source [u8]>,
+    leading_trivia: &'source [u8],
 }
 
 fn token_inner<'source>(lexer: &mut Lexer<'source, Token<'source>>) -> TokenInner<'source> {
+    let result = lexer.slice();
     let remain = lexer.remainder();
-    let mut leading_trivia_end = 0;
+    let mut trailing_trivia_end = 0;
 
     // check leading trivia
     for b in remain.iter() {
         match b {
             b' ' | b'\t' | b'\r' => {
-                leading_trivia_end += 1;
-                lexer.bump(1);
-            }
-            _ => break,
-        }
-    }
-
-    let mut trailing_trivia_end = leading_trivia_end;
-
-    // check \n
-    if let Some(b'\n') = remain.get(trailing_trivia_end) {
-        trailing_trivia_end += 1;
-        lexer.bump(1);
-    }
-
-    // check trailing trivia
-    for b in remain[trailing_trivia_end..].iter() {
-        match b {
-            b' ' | b'\t' | b'\n' | b'\r' => {
                 trailing_trivia_end += 1;
                 lexer.bump(1);
             }
@@ -95,12 +103,65 @@ fn token_inner<'source>(lexer: &mut Lexer<'source, Token<'source>>) -> TokenInne
         }
     }
 
-    let this_trailing = lexer.extras.trailing_trivia.unwrap_or(&[]);
-    lexer.extras.trailing_trivia = Some(&remain[leading_trivia_end..trailing_trivia_end]);
+    let mut leading_trivia_end = trailing_trivia_end;
+
+    // check \n
+    if let Some(b'\n') = remain.get(leading_trivia_end) {
+        leading_trivia_end += 1;
+        lexer.bump(1);
+    }
+
+    // check leading trivia
+    for b in remain[leading_trivia_end..].iter() {
+        match b {
+            b' ' | b'\t' | b'\n' | b'\r' => {
+                leading_trivia_end += 1;
+                lexer.bump(1);
+            }
+            _ => break,
+        }
+    }
+
+    let this_leading = lexer.extras.leading_trivia;
+    lexer.extras.leading_trivia = &remain[trailing_trivia_end..leading_trivia_end];
 
     TokenInner {
-        leading_trivia: &remain[..leading_trivia_end],
-        token: lexer.slice(),
-        trailing_trivia: this_trailing,
+        leading_trivia: this_leading,
+        token: result,
+        trailing_trivia: &remain[..trailing_trivia_end],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_token_inner() {
+        let source = b"  def   \n   def   \n   ";
+        let tokens = lex(source).unwrap();
+        assert_eq!(tokens.len(), 3);
+        match &tokens[0] {
+            Token::Def(inner) => {
+                assert_eq!(inner.leading_trivia(), b"  ");
+                assert_eq!(inner.token(), b"def");
+                assert_eq!(inner.trailing_trivia(), b"   ");
+            }
+            _ => panic!("Expected Def token"),
+        }
+        match &tokens[1] {
+            Token::Def(inner) => {
+                assert_eq!(inner.leading_trivia(), b"\n   ");
+                assert_eq!(inner.token(), b"def");
+                assert_eq!(inner.trailing_trivia(), b"   ");
+            }
+            _ => panic!("Expected Def token"),
+        }
+        match &tokens[2] {
+            Token::Rest(inner) => {
+                assert_eq!(inner, b"\n   ");
+            }
+            _ => panic!("Expected Rest token"),
+        }
     }
 }
