@@ -164,4 +164,46 @@ mod tests {
             _ => panic!("Expected Rest token"),
         }
     }
+
+    #[test]
+    fn test_string_literal() {
+        let source = b"  \"hello\\\"world\"   ";
+        let tokens = lex(source).unwrap();
+        assert_eq!(tokens.len(), 2);
+        match &tokens[0] {
+            Token::String(inner) => {
+                assert_eq!(inner.leading_trivia(), b"  ");
+                assert_eq!(inner.token(), b"\"hello\\\"world\"");
+                assert_eq!(inner.trailing_trivia(), b"   ");
+            }
+            _ => panic!("Expected String token"),
+        }
+        match &tokens[1] {
+            Token::Rest(inner) => {
+                assert_eq!(inner, b"");
+            }
+            _ => panic!("Expected Rest token"),
+        }
+    }
+
+    #[test]
+    fn test_string_literal_with_escaped_backslash() {
+        let source = b"  \"hello\\\\world\"   ";
+        let tokens = lex(source).unwrap();
+        assert_eq!(tokens.len(), 2);
+        match &tokens[0] {
+            Token::String(inner) => {
+                assert_eq!(inner.leading_trivia(), b"  ");
+                assert_eq!(inner.token(), b"\"hello\\\\world\"");
+                assert_eq!(inner.trailing_trivia(), b"   ");
+            }
+            _ => panic!("Expected String token"),
+        }
+        match &tokens[1] {
+            Token::Rest(inner) => {
+                assert_eq!(inner, b"");
+            }
+            _ => panic!("Expected Rest token"),
+        }
+    }
 }
