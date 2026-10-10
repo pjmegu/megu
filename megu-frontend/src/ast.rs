@@ -13,6 +13,8 @@ pub enum NodeKind {
     TRParen,
     TLBracket,
     TRBracket,
+    TComma,
+    TBackslash,
 
     // Top Nodes
     Root,
@@ -26,6 +28,7 @@ pub enum NodeKind {
     Block,
     Call,
     CallArg,
+    Lambda,
 
     // literal
     Ident,

@@ -35,6 +35,7 @@ make_ptoken!(ptrparen, RParen);
 make_ptoken!(ptlbracket, LBracket);
 make_ptoken!(ptrbracket, RBracket);
 make_ptoken!(ptcomma, Comma);
+make_ptoken!(ptbackslash, Backslash);
 
 // parser
 fn proot<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
@@ -64,17 +65,44 @@ fn pdef<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'so
 
 fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
     patom()
-        .pratt((postfix(50, pcall(), |expr, op, _| {
-            let mut events = EventVec::new();
-            events.push_event(Event::Node(NodeKind::Expr));
-            events.push_event(Event::Node(NodeKind::Call));
-            events.push_vector(expr);
-            events.push_vector(op);
-            events.push_event(Event::FinNode);
-            events.push_event(Event::FinNode);
-            events
-        }),))
+        .pratt((
+            postfix(50, pcall(), |expr, op, _| {
+                let mut events = EventVec::new();
+                events.push_event(Event::Node(NodeKind::Expr));
+                events.push_event(Event::Node(NodeKind::Call));
+                events.push_vector(expr);
+                events.push_vector(op);
+                events.push_event(Event::FinNode);
+                events.push_event(Event::FinNode);
+                events
+            }),
+            prefix(25, plambda(), |op, expr, _| {
+                let mut events = EventVec::new();
+                events.push_event(Event::Node(NodeKind::Expr));
+                events.push_event(Event::Node(NodeKind::Lambda));
+                events.push_vector(op);
+                events.push_vector(expr);
+                events.push_event(Event::FinNode);
+                events.push_event(Event::FinNode);
+                events
+            }),
+        ))
         .boxed()
+}
+
+fn plambda<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+    ptbackslash().then(ptbackslash()).map(|(first, second)| {
+        let mut events = EventVec::new();
+        events.push_event(Event::Token(
+            NodeKind::TBackslash,
+            std::str::from_utf8(first.token()).unwrap(),
+        ));
+        events.push_event(Event::Token(
+            NodeKind::TBackslash,
+            std::str::from_utf8(second.token()).unwrap(),
+        ));
+        events
+    })
 }
 
 fn pcall<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {

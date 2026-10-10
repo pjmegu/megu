@@ -31,6 +31,8 @@ pub enum Token<'source> {
     RBracket(TokenInner<'source>),
     #[token(",", token_inner)]
     Comma(TokenInner<'source>),
+    #[token("\\", token_inner)]
+    Backslash(TokenInner<'source>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
