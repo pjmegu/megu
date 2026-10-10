@@ -104,9 +104,9 @@ fn pdef<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'so
 }
 
 fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
-    patom()
-        .pratt((
-            postfix(50, pcall(), |expr, op, _| {
+    recursive(|expr| {
+        patom().pratt((
+            postfix(50, pcall(expr.clone()), |expr, op, _| {
                 let mut events = EventVec::new();
                 events.push_event(Event::Node(NodeKind::Expr));
                 events.push_event(Event::Node(NodeKind::Call));
@@ -116,7 +116,7 @@ fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
                 events.push_event(Event::FinNode);
                 events
             }),
-            prefix(25, plambda(), |op, expr, _| {
+            prefix(25, plambda(expr.clone()), |op, expr, _| {
                 let mut events = EventVec::new();
                 events.push_event(Event::Node(NodeKind::Expr));
                 events.push_event(Event::Node(NodeKind::Lambda));
@@ -127,10 +127,10 @@ fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
                 events
             }),
         ))
-        .boxed()
+    })
 }
 
-fn plambda<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
+fn plambda<'a, 'source: 'a>(_expr: impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone) -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptbackslash().then(ptbackslash()).map(|(first, second)| {
         let mut events = EventVec::new();
         events.push_event(Event::Token(
@@ -145,10 +145,10 @@ fn plambda<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<
     })
 }
 
-fn pcall<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
+fn pcall<'a, 'source: 'a>(expr: impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone + 'a) -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptlparen()
         .then(separated_by_with_separator(
-            pexpr().map(|e| {
+            expr.map(|e| {
                 let mut events = EventVec::new();
                 events.push_event(Event::Node(NodeKind::CallArg));
                 events.push_vector(e);
