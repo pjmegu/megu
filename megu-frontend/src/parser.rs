@@ -17,11 +17,51 @@ pub fn parse<'a, 'source: 'a>(token: &'a [Token<'source>]) -> Result<EventVec<'s
     }
 }
 
+enum Separated<T, S> {
+    Parser(T),
+    Separator(S),
+}
+
+// support function
+fn separated_by_with_separator<'a, 'source: 'a, P, S, O, O2>(
+    parser: P,
+    separator: S,
+) -> impl Parser<'a, &'a [Token<'source>], Vec<Separated<O, O2>>> + Clone
+where
+    P: Parser<'a, &'a [Token<'source>], O> + Clone + 'a,
+    S: Parser<'a, &'a [Token<'source>], O2> + Clone + 'a,
+{
+    parser
+        .clone()
+        .map(Separated::Parser)
+        .then(
+            separator
+                .clone()
+                .map(Separated::Separator::<O, O2>)
+                .then(parser.map(Separated::Parser::<O, O2>))
+                .repeated()
+                .collect::<Vec<_>>(),
+        )
+        .then(separator.or_not())
+        .map(|((first, rest), last)| {
+            let mut result = vec![first];
+            for (sep, item) in rest {
+                result.push(sep);
+                result.push(item);
+            }
+            if let Some(sep) = last {
+                result.push(Separated::Separator(sep));
+            }
+            result
+        })
+}
+
 // tokens
 macro_rules! make_ptoken {
     ($name:ident, $variant:ident) => {
-        fn $name<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], TokenInner<'source>> {
-            select! { Token::$variant(inner) => inner }
+        fn $name<'a, 'source: 'a>()
+        -> impl Parser<'a, &'a [Token<'source>], &'a TokenInner<'source>> + Clone {
+            select_ref! { Token::$variant(inner) => inner }
         }
     };
 }
@@ -38,11 +78,11 @@ make_ptoken!(ptcomma, Comma);
 make_ptoken!(ptbackslash, Backslash);
 
 // parser
-fn proot<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn proot<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     pdef().repeated().collect().then_ignore(end())
 }
 
-fn pdef<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn pdef<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptdef()
         .then(ptident())
         .then(pexpr())
@@ -63,7 +103,7 @@ fn pdef<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'so
         })
 }
 
-fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     patom()
         .pratt((
             postfix(50, pcall(), |expr, op, _| {
@@ -90,7 +130,7 @@ fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
         .boxed()
 }
 
-fn plambda<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn plambda<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptbackslash().then(ptbackslash()).map(|(first, second)| {
         let mut events = EventVec::new();
         events.push_event(Event::Token(
@@ -105,21 +145,18 @@ fn plambda<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<
     })
 }
 
-fn pcall<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn pcall<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptlparen()
-        .then(
-            pexpr()
-                .map(|e| {
-                    let mut events = EventVec::new();
-                    events.push_event(Event::Node(NodeKind::CallArg));
-                    events.push_vector(e);
-                    events.push_event(Event::FinNode);
-                    events
-                })
-                .separated_by(ptcomma())
-                .allow_trailing()
-                .collect(),
-        )
+        .then(separated_by_with_separator(
+            pexpr().map(|e| {
+                let mut events = EventVec::new();
+                events.push_event(Event::Node(NodeKind::CallArg));
+                events.push_vector(e);
+                events.push_event(Event::FinNode);
+                events
+            }),
+            ptcomma(),
+        ))
         .then(ptrparen())
         .map(|((lparen, exprs), rparen)| {
             let mut events = EventVec::new();
@@ -127,7 +164,15 @@ fn pcall<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
                 NodeKind::TLParen,
                 str::from_utf8(lparen.token()).unwrap(),
             ));
-            events.push_vector(exprs);
+            for expr in exprs {
+                match expr {
+                    Separated::Parser(arg) => events.push_vector(arg),
+                    Separated::Separator(comma) => events.push_event(Event::Token(
+                        NodeKind::TComma,
+                        str::from_utf8(comma.token()).unwrap(),
+                    )),
+                }
+            }
             events.push_event(Event::Token(
                 NodeKind::TRParen,
                 str::from_utf8(rparen.token()).unwrap(),
@@ -136,7 +181,7 @@ fn pcall<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
         })
 }
 
-fn patom<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn patom<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     choice((
         select_ref! {
             Token::Ident(inner) => {
@@ -171,7 +216,7 @@ fn patom<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
     ))
 }
 
-fn pblock<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> {
+fn pblock<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptlbracket()
         .then(
             pexpr()

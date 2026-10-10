@@ -1,13 +1,16 @@
 use crate::ast::NodeKind;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event<'source> {
     Node(NodeKind),
     Token(NodeKind, &'source str),
     FinNode,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EventVec<'source>(Vec<EventVecItem<'source>>);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum EventVecItem<'source> {
     Event(Event<'source>),
     Vector(EventVec<'source>),
