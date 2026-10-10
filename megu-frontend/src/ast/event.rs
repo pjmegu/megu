@@ -47,6 +47,34 @@ impl<'source> EventVec<'source> {
             }
         }
     }
+
+    fn flatten_into<'a>(&'a self, vec: &mut Vec<Event<'source>>) {
+        for item in &self.0 {
+            match item {
+                EventVecItem::Event(event) => vec.push(*event),
+                EventVecItem::Vector(vector) => vector.flatten_into(vec),
+            }
+        }
+    }
+}
+
+impl <'source> IntoIterator for EventVec<'source> {
+    type Item = Event<'source>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let mut vec = Vec::new();
+        self.flatten_into(&mut vec);
+        vec.into_iter()
+    }
+}
+
+impl<'source, 'a: 'source> Iterator for EventVecIter<'source, 'a> {
+    type Item = &'source Event<'source>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.vec.pop()
+    }
 }
 
 impl<'source> FromIterator<EventVec<'source>> for EventVec<'source> {

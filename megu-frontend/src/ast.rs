@@ -35,6 +35,7 @@ pub enum NodeKind {
     BuiltinIdent,
     String,
 
+    Rest,
     Error,
 }
 
