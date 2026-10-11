@@ -22,6 +22,7 @@ impl rowan::Language for Lang {
 }
 
 pub type SyntaxNode = rowan::SyntaxNode<Lang>;
+pub type SyntaxNodePtr = rowan::ast::SyntaxNodePtr<Lang>;
 pub type SyntaxToken = rowan::SyntaxToken<Lang>;
 
 macro_rules! make_ast {
@@ -107,6 +108,13 @@ impl  Call {
 make_ast!(CallArg, CallArg);
 impl CallArg {
     pub fn expr(&self) -> Option<Expr> {
+        self.syntax().children().find_map(Expr::cast)
+    }
+}
+
+make_ast!(Lambda, Lambda);
+impl Lambda {
+    pub fn body(&self) -> Option<Expr> {
         self.syntax().children().find_map(Expr::cast)
     }
 }
