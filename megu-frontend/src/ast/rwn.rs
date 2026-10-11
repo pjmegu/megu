@@ -76,14 +76,43 @@ impl StmtExpr {
     }
 }
 
-make_ast!(Expr, Expr);
+#[derive(Debug, Clone)]
+pub struct Expr(SyntaxNode);
+impl AstNode for Expr {
+    type Language = Lang;
+
+    fn can_cast(kind: <<Expr as AstNode>::Language as rowan::Language>::Kind) -> bool {
+        match kind {
+            NodeKind::Block
+            | NodeKind::Call
+            | NodeKind::Lambda
+            | NodeKind::Ident
+            | NodeKind::BuiltinIdent
+            | NodeKind::String => true,
+            _ => false,
+        }
+    }
+
+    fn cast(node: rowan::SyntaxNode<Self::Language>) -> Option<Self> {
+        if Self::can_cast(node.kind()) {
+            Some(Self(node))
+        } else {
+            None
+        }
+    }
+
+    fn syntax(&self) -> &rowan::SyntaxNode<Self::Language> {
+        &self.0
+    }
+}
+
 impl Expr {
-    pub fn inside_kind(&self) -> Option<NodeKind> {
-        self.syntax().first_child().map(|node| node.kind())
+    pub fn inside_kind(&self) -> NodeKind {
+        self.syntax().kind()
     }
 
     pub fn inside_cast<T: AstNode<Language = <Self as AstNode>::Language>>(&self) -> Option<T> {
-        self.syntax().first_child().and_then(|node| T::cast(node))
+        T::cast(self.syntax().clone())
     }
 }
 
@@ -95,7 +124,7 @@ impl Block {
 }
 
 make_ast!(Call, Call);
-impl  Call {
+impl Call {
     pub fn callee(&self) -> Option<Expr> {
         self.syntax().children().find_map(Expr::cast)
     }
@@ -122,11 +151,9 @@ impl Lambda {
 make_ast!(Ident, Ident);
 impl Ident {
     pub fn token(&self) -> Option<SyntaxToken> {
-        self.syntax().children_with_tokens().find_map(|m| {
-            match m {
-                rowan::NodeOrToken::Node(_) => None,
-                rowan::NodeOrToken::Token(t) => Some(t)
-            }
+        self.syntax().children_with_tokens().find_map(|m| match m {
+            rowan::NodeOrToken::Node(_) => None,
+            rowan::NodeOrToken::Token(t) => Some(t),
         })
     }
 }
@@ -134,11 +161,9 @@ impl Ident {
 make_ast!(BuiltinIdent, BuiltinIdent);
 impl BuiltinIdent {
     pub fn token(&self) -> Option<SyntaxToken> {
-        self.syntax().children_with_tokens().find_map(|m| {
-            match m {
-                rowan::NodeOrToken::Node(_) => None,
-                rowan::NodeOrToken::Token(t) => Some(t)
-            }
+        self.syntax().children_with_tokens().find_map(|m| match m {
+            rowan::NodeOrToken::Node(_) => None,
+            rowan::NodeOrToken::Token(t) => Some(t),
         })
     }
 }
@@ -146,11 +171,9 @@ impl BuiltinIdent {
 make_ast!(String, String);
 impl String {
     pub fn token(&self) -> Option<SyntaxToken> {
-        self.syntax().children_with_tokens().find_map(|m| {
-            match m {
-                rowan::NodeOrToken::Node(_) => None,
-                rowan::NodeOrToken::Token(t) => Some(t)
-            }
+        self.syntax().children_with_tokens().find_map(|m| match m {
+            rowan::NodeOrToken::Node(_) => None,
+            rowan::NodeOrToken::Token(t) => Some(t),
         })
     }
 }

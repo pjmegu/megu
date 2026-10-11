@@ -123,21 +123,17 @@ fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
         patom(expr.clone()).pratt((
             postfix(50, pcall(expr.clone()), |expr, op, _| {
                 event_vec! {
-                    Expr {
-                        Call {
-                            vec(expr);
-                            vec(op);
-                        }
+                    Call {
+                        vec(expr);
+                        vec(op);
                     }
                 }
             }),
             prefix(25, plambda(expr.clone()), |op, expr, _| {
                 event_vec! {
-                    Expr {
-                        Lambda {
-                            vec(op);
-                            vec(expr);
-                        }
+                    Lambda {
+                        vec(op);
+                        vec(expr);
                     }
                 }
             }),
@@ -196,28 +192,22 @@ fn patom<'a, 'source: 'a>(
         select_ref! {
             Token::Ident(inner) => {
                 event_vec! {
-                    Expr {
-                        Ident {
-                            tokeni(TIdent, inner);
-                        }
+                    Ident {
+                        tokeni(TIdent, inner);
                     }
                 }
             },
             Token::BuiltinIdent(inner) => {
                 event_vec! {
-                    Expr {
-                        BuiltinIdent {
-                            tokeni(TBuiltinIdent, inner);
-                        }
+                    BuiltinIdent {
+                        tokeni(TBuiltinIdent, inner);
                     }
                 }
             },
             Token::String(inner) => {
                 event_vec! {
-                    Expr {
-                        String {
-                            tokeni(TString, inner);
-                        }
+                    String {
+                        tokeni(TString, inner);
                     }
                 }
             }
@@ -279,21 +269,15 @@ mod tests {
                 Def {
                     token(TDef, "", "def", " ");
                     token(TIdent, "", "foo", " ");
-                    Expr {
-                        Lambda {
-                            token(TBackslash, "", "\\", "");
-                            token(TBackslash, "", "\\", " ");
-                            Expr {
-                                Call {
-                                    Expr {
-                                        Ident {
-                                            token(TIdent, "", "foo", "");
-                                        }
-                                    }
-                                    token(TLParen, "", "(", "");
-                                    token(TRParen, "", ")", "");
-                                }
+                    Lambda {
+                        token(TBackslash, "", "\\", "");
+                        token(TBackslash, "", "\\", " ");
+                        Call {
+                            Ident {
+                                token(TIdent, "", "foo", "");
                             }
+                            token(TLParen, "", "(", "");
+                            token(TRParen, "", ")", "");
                         }
                     }
                 }
@@ -317,29 +301,21 @@ mod tests {
             Block {
                 token(TLBracket, "", "[", " ");
                 StmtExpr {
-                    Expr {
-                        Call {
-                            Expr {
-                                Ident {
-                                    token(TIdent, "", "foo", "");
-                                }
-                            }
-                            token(TLParen, "", "(", "");
-                            token(TRParen, "", ")", " ");
+                    Call {
+                        Ident {
+                            token(TIdent, "", "foo", "");
                         }
+                        token(TLParen, "", "(", "");
+                        token(TRParen, "", ")", " ");
                     }
                 }
                 StmtExpr {
-                    Expr {
-                        Call {
-                            Expr {
-                                Ident {
-                                    token(TIdent, "", "bar", "");
-                                }
-                            }
-                            token(TLParen, "", "(", "");
-                            token(TRParen, "", ")", " ");
+                    Call {
+                        Ident {
+                            token(TIdent, "", "bar", "");
                         }
+                        token(TLParen, "", "(", "");
+                        token(TRParen, "", ")", " ");
                     }
                 }
                 token(TRBracket, "", "]", "");

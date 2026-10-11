@@ -25,7 +25,6 @@ pub enum NodeKind {
     StmtExpr,
 
     // expr
-    Expr,
     Block,
     Call,
     CallArg,
