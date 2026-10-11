@@ -28,19 +28,6 @@ macro_rules! make_ast {
     ($name:ident, $kind:ident) => {
         #[derive(Debug, Clone)]
         pub struct $name(SyntaxNode);
-        impl $name {
-            pub fn cast(node: SyntaxNode) -> Option<Self> {
-                if node.kind() == NodeKind::$kind {
-                    Some(Self(node))
-                } else {
-                    None
-                }
-            }
-
-            pub fn syntax(&self) -> &SyntaxNode {
-                &self.0
-            }
-        }
         impl AstNode for $name {
             type Language = Lang;
 
@@ -64,12 +51,98 @@ macro_rules! make_ast {
 }
 
 make_ast!(Root, Root);
+impl Root {
+    pub fn defs(&self) -> impl Iterator<Item = Def> {
+        self.syntax().children().filter_map(Def::cast)
+    }
+}
+
 make_ast!(Def, Def);
+impl Def {
+    pub fn name(&self) -> Option<Ident> {
+        self.syntax().children().find_map(Ident::cast)
+    }
+
+    pub fn body(&self) -> Option<Expr> {
+        self.syntax().children().find_map(Expr::cast)
+    }
+}
+
 make_ast!(StmtExpr, StmtExpr);
+impl StmtExpr {
+    pub fn expr(&self) -> Option<Expr> {
+        self.syntax().children().find_map(Expr::cast)
+    }
+}
+
 make_ast!(Expr, Expr);
+impl Expr {
+    pub fn inside_kind(&self) -> Option<NodeKind> {
+        self.syntax().first_child().map(|node| node.kind())
+    }
+
+    pub fn inside_cast<T: AstNode<Language = <Self as AstNode>::Language>>(&self) -> Option<T> {
+        self.syntax().first_child().and_then(|node| T::cast(node))
+    }
+}
+
 make_ast!(Block, Block);
+impl Block {
+    pub fn stmts(&self) -> impl Iterator<Item = StmtExpr> {
+        self.syntax().children().filter_map(StmtExpr::cast)
+    }
+}
+
 make_ast!(Call, Call);
+impl  Call {
+    pub fn callee(&self) -> Option<Expr> {
+        self.syntax().children().find_map(Expr::cast)
+    }
+
+    pub fn args(&self) -> impl Iterator<Item = CallArg> {
+        self.syntax().children().filter_map(CallArg::cast)
+    }
+}
+
 make_ast!(CallArg, CallArg);
+impl CallArg {
+    pub fn expr(&self) -> Option<Expr> {
+        self.syntax().children().find_map(Expr::cast)
+    }
+}
+
 make_ast!(Ident, Ident);
+impl Ident {
+    pub fn token(&self) -> Option<SyntaxToken> {
+        self.syntax().children_with_tokens().find_map(|m| {
+            match m {
+                rowan::NodeOrToken::Node(_) => None,
+                rowan::NodeOrToken::Token(t) => Some(t)
+            }
+        })
+    }
+}
+
 make_ast!(BuiltinIdent, BuiltinIdent);
+impl BuiltinIdent {
+    pub fn token(&self) -> Option<SyntaxToken> {
+        self.syntax().children_with_tokens().find_map(|m| {
+            match m {
+                rowan::NodeOrToken::Node(_) => None,
+                rowan::NodeOrToken::Token(t) => Some(t)
+            }
+        })
+    }
+}
+
 make_ast!(String, String);
+impl String {
+    pub fn token(&self) -> Option<SyntaxToken> {
+        self.syntax().children_with_tokens().find_map(|m| {
+            match m {
+                rowan::NodeOrToken::Node(_) => None,
+                rowan::NodeOrToken::Token(t) => Some(t)
+            }
+        })
+    }
+}
