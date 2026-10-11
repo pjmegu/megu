@@ -159,9 +159,7 @@ fn pcall<'a, 'source: 'a>(
         .then(separated_by_with_separator(
             expr.map(|e| {
                 event_vec! {
-                    CallArg {
-                        vec(e);
-                    }
+                    vec(e);
                 }
             }),
             ptcomma(),

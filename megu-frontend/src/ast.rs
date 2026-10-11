@@ -26,7 +26,6 @@ pub enum NodeKind {
     // expr
     Block,
     Call,
-    CallArg,
     Lambda,
 
     // literal

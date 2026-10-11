@@ -159,15 +159,8 @@ impl Call {
         self.syntax().children().find_map(Expr::cast)
     }
 
-    pub fn args(&self) -> impl Iterator<Item = CallArg> {
-        self.syntax().children().filter_map(CallArg::cast)
-    }
-}
-
-make_ast!(CallArg, CallArg);
-impl CallArg {
-    pub fn expr(&self) -> Option<Expr> {
-        self.syntax().children().find_map(Expr::cast)
+    pub fn args(&self) -> impl Iterator<Item = Expr> {
+        self.syntax().children().filter_map(Expr::cast).skip(1)
     }
 }
 
