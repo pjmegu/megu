@@ -1,4 +1,4 @@
-use crate::ast::NodeKind;
+use crate::{ast::NodeKind, token::TokenInner};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event<'source> {
@@ -56,9 +56,37 @@ impl<'source> EventVec<'source> {
             }
         }
     }
+
+    pub fn push_token<'a>(&mut self, kind: NodeKind, text: &'a TokenInner<'source>) {
+        if !text.leading_trivia().is_empty() {
+            self.push_event(Event::Token(
+                NodeKind::Trivia,
+                str::from_utf8(text.leading_trivia()).unwrap(),
+            ));
+        }
+        self.push_event(Event::Token(kind, str::from_utf8(text.token()).unwrap()));
+        if !text.trailing_trivia().is_empty() {
+            self.push_event(Event::Token(
+                NodeKind::Trivia,
+                str::from_utf8(text.trailing_trivia()).unwrap(),
+            ));
+        }
+    }
+
+    pub fn push_node(&mut self, kind: NodeKind, f: impl FnOnce(&mut EventVec<'source>)) {
+        self.push_event(Event::Node(kind));
+        f(self);
+        self.push_event(Event::FinNode);
+    }
+
+    pub fn new_with(f: impl FnOnce(&mut EventVec<'source>)) -> Self {
+        let mut event_vec = EventVec::new();
+        f(&mut event_vec);
+        event_vec
+    }
 }
 
-impl <'source> IntoIterator for EventVec<'source> {
+impl<'source> IntoIterator for EventVec<'source> {
     type Item = Event<'source>;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -85,4 +113,48 @@ impl<'source> FromIterator<EventVec<'source>> for EventVec<'source> {
         }
         event_vec
     }
+}
+
+#[macro_export]
+/*
+event_vec! {
+    NodeKind::Root {
+        NodeKind::Def {
+            NodeKind::Ident {
+                token(NodeKind::TIdent, "foo");
+            }
+        }
+    }
+}
+*/
+macro_rules! event_vec {
+    (@items $event_vec:ident;) => {};
+
+    (@items $event_vec:ident; token($kind:expr, $leading:expr, $text:expr, $trailing:expr); $($rest:tt)*) => {
+        $event_vec.push_token($kind, &$crate::token::TokenInner::new($leading.as_bytes(), $text.as_bytes(), $trailing.as_bytes()));
+        $crate::event_vec!(@items $event_vec; $($rest)*);
+    };
+
+    (@items $event_vec:ident; tokeni($kind:expr, $text:expr); $($rest:tt)*) => {
+        $event_vec.push_token($kind, $text);
+        $crate::event_vec!(@items $event_vec; $($rest)*);
+    };
+
+    (@items $event_vec:ident; vec($vec:expr); $($rest:tt)*) => {
+        $event_vec.push_vector($vec);
+        $crate::event_vec!(@items $event_vec; $($rest)*);
+    };
+
+    (@items $event_vec:ident; $kind:path { $($body:tt)* } $($rest:tt)*) => {
+        $event_vec.push_node($kind, |event_vec| {
+            $crate::event_vec!(@items event_vec; $($body)*);
+        });
+        $crate::event_vec!(@items $event_vec; $($rest)*);
+    };
+
+    ($($item:tt)*) => {{
+        $crate::ast::event::EventVec::new_with(|event_vec| {
+            $crate::event_vec!(@items event_vec; $($item)*);
+        })
+    }};
 }

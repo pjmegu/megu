@@ -69,6 +69,14 @@ pub struct TokenInner<'source> {
 }
 
 impl<'source> TokenInner<'source> {
+    pub fn new(leading_trivia: &'source [u8], token: &'source [u8], trailing_trivia: &'source [u8]) -> Self {
+        Self {
+            leading_trivia,
+            token,
+            trailing_trivia,
+        }
+    }
+
     pub fn leading_trivia(&self) -> &'source [u8] {
         self.leading_trivia
     }

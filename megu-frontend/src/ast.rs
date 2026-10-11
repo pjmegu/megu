@@ -15,6 +15,7 @@ pub enum NodeKind {
     TRBracket,
     TComma,
     TBackslash,
+    Trivia,
 
     // Top Nodes
     Root,
@@ -35,7 +36,6 @@ pub enum NodeKind {
     BuiltinIdent,
     String,
 
-    Rest,
     Error,
 }
 

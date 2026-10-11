@@ -1,8 +1,9 @@
 use crate::{
     ast::{
-        NodeKind,
+        NodeKind::*,
         event::{Event, EventVec},
     },
+    event_vec,
     token::{Token, TokenInner},
 };
 use chumsky::pratt::*;
@@ -86,15 +87,19 @@ fn proot<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
         .collect::<EventVec<'_>>()
         .then(select_ref! { Token::Rest(s) => s })
         .map(|(defs, rest)| {
-            let mut events = EventVec::new();
-            events.push_event(Event::Node(NodeKind::Root));
-            events.push_vector(defs);
-            events.push_event(Event::Token(
-                NodeKind::Rest,
-                std::str::from_utf8(rest).unwrap(),
-            ));
-            events.push_event(Event::FinNode);
-            events
+            let rest = if rest.is_empty() {
+                event_vec! {}
+            } else {
+                EventVec::new_with(move |v| {
+                    v.push_event(Event::Token(Trivia, str::from_utf8(rest).unwrap()));
+                })
+            };
+            event_vec! {
+                Root {
+                    vec(defs);
+                    vec(rest);
+                }
+            }
         })
 }
 
@@ -103,19 +108,13 @@ fn pdef<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'so
         .then(ptident())
         .then(pexpr())
         .map(|((def, ident), expr)| {
-            let mut events = EventVec::new();
-            events.push_event(Event::Node(NodeKind::Def));
-            events.push_event(Event::Token(
-                NodeKind::TDef,
-                std::str::from_utf8(def.token()).unwrap(),
-            ));
-            events.push_event(Event::Token(
-                NodeKind::TIdent,
-                std::str::from_utf8(ident.token()).unwrap(),
-            ));
-            events.push_vector(expr);
-            events.push_event(Event::FinNode);
-            events
+            event_vec! {
+                Def {
+                    tokeni(TDef, def);
+                    tokeni(TIdent, ident);
+                    vec(expr);
+                }
+            }
         })
 }
 
@@ -123,24 +122,24 @@ fn pexpr<'a, 'source: 'a>() -> impl Parser<'a, &'a [Token<'source>], EventVec<'s
     recursive(|expr| {
         patom(expr.clone()).pratt((
             postfix(50, pcall(expr.clone()), |expr, op, _| {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::Expr));
-                events.push_event(Event::Node(NodeKind::Call));
-                events.push_vector(expr);
-                events.push_vector(op);
-                events.push_event(Event::FinNode);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    Expr {
+                        Call {
+                            vec(expr);
+                            vec(op);
+                        }
+                    }
+                }
             }),
             prefix(25, plambda(expr.clone()), |op, expr, _| {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::Expr));
-                events.push_event(Event::Node(NodeKind::Lambda));
-                events.push_vector(op);
-                events.push_vector(expr);
-                events.push_event(Event::FinNode);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    Expr {
+                        Lambda {
+                            vec(op);
+                            vec(expr);
+                        }
+                    }
+                }
             }),
         ))
     })
@@ -150,16 +149,10 @@ fn plambda<'a, 'source: 'a>(
     _expr: impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone,
 ) -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptbackslash().then(ptbackslash()).map(|(first, second)| {
-        let mut events = EventVec::new();
-        events.push_event(Event::Token(
-            NodeKind::TBackslash,
-            std::str::from_utf8(first.token()).unwrap(),
-        ));
-        events.push_event(Event::Token(
-            NodeKind::TBackslash,
-            std::str::from_utf8(second.token()).unwrap(),
-        ));
-        events
+        event_vec! {
+            tokeni(TBackslash, first);
+            tokeni(TBackslash, second);
+        }
     })
 }
 
@@ -169,35 +162,30 @@ fn pcall<'a, 'source: 'a>(
     ptlparen()
         .then(separated_by_with_separator(
             expr.map(|e| {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::CallArg));
-                events.push_vector(e);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    CallArg {
+                        vec(e);
+                    }
+                }
             }),
             ptcomma(),
         ))
         .then(ptrparen())
         .map(|((lparen, exprs), rparen)| {
-            let mut events = EventVec::new();
-            events.push_event(Event::Token(
-                NodeKind::TLParen,
-                str::from_utf8(lparen.token()).unwrap(),
-            ));
-            for expr in exprs {
-                match expr {
-                    Separated::Parser(arg) => events.push_vector(arg),
-                    Separated::Separator(comma) => events.push_event(Event::Token(
-                        NodeKind::TComma,
-                        str::from_utf8(comma.token()).unwrap(),
-                    )),
-                }
+            let exprs = exprs
+                .into_iter()
+                .map(|expr| match expr {
+                    Separated::Parser(arg) => arg,
+                    Separated::Separator(comma) => event_vec! {
+                        tokeni(TComma, comma);
+                    },
+                })
+                .collect::<EventVec<'_>>();
+            event_vec! {
+                tokeni(TLParen, lparen);
+                vec(exprs);
+                tokeni(TRParen, rparen);
             }
-            events.push_event(Event::Token(
-                NodeKind::TRParen,
-                str::from_utf8(rparen.token()).unwrap(),
-            ));
-            events
         })
 }
 
@@ -207,31 +195,31 @@ fn patom<'a, 'source: 'a>(
     choice((
         select_ref! {
             Token::Ident(inner) => {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::Expr));
-                events.push_event(Event::Node(NodeKind::Ident));
-                events.push_event(Event::Token(NodeKind::TIdent, std::str::from_utf8(inner.token()).unwrap()));
-                events.push_event(Event::FinNode);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    Expr {
+                        Ident {
+                            tokeni(TIdent, inner);
+                        }
+                    }
+                }
             },
             Token::BuiltinIdent(inner) => {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::Expr));
-                events.push_event(Event::Node(NodeKind::BuiltinIdent));
-                events.push_event(Event::Token(NodeKind::TBuiltinIdent, std::str::from_utf8(inner.token()).unwrap()));
-                events.push_event(Event::FinNode);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    Expr {
+                        BuiltinIdent {
+                            tokeni(TBuiltinIdent, inner);
+                        }
+                    }
+                }
             },
             Token::String(inner) => {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::Expr));
-                events.push_event(Event::Node(NodeKind::String));
-                events.push_event(Event::Token(NodeKind::TString, std::str::from_utf8(inner.token()).unwrap()));
-                events.push_event(Event::FinNode);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    Expr {
+                        String {
+                            tokeni(TString, inner);
+                        }
+                    }
+                }
             }
         },
         pblock(expr),
@@ -244,51 +232,35 @@ fn pblock<'a, 'source: 'a>(
     ptlbracket()
         .then(
             expr.map(|e| {
-                let mut events = EventVec::new();
-                events.push_event(Event::Node(NodeKind::StmtExpr));
-                events.push_vector(e);
-                events.push_event(Event::FinNode);
-                events
+                event_vec! {
+                    StmtExpr {
+                        vec(e);
+                    }
+                }
             })
             .repeated()
             .collect(),
         )
         .then(ptrbracket())
         .map(|((lbracket, exprs), rbracket)| {
-            let mut events = EventVec::new();
-            events.push_event(Event::Node(NodeKind::Block));
-            events.push_event(Event::Token(
-                NodeKind::TLBracket,
-                str::from_utf8(lbracket.token()).unwrap(),
-            ));
-            events.push_vector(exprs);
-            events.push_event(Event::Token(
-                NodeKind::TRBracket,
-                str::from_utf8(rbracket.token()).unwrap(),
-            ));
-            events.push_event(Event::FinNode);
-            events
+            event_vec! {
+                Block {
+                    tokeni(TLBracket, lbracket);
+                    vec(exprs);
+                    tokeni(TRBracket, rbracket);
+                }
+            }
         })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::lex;
+    use crate::{event_vec, token::lex};
 
     macro_rules! make_parse {
         ($func:expr, $token:expr) => {{
-            let parser = $func
-                .then(select_ref! { Token::Rest(s) => s })
-                .map(|(defs, rest)| {
-                    let mut events = EventVec::new();
-                    events.push_vector(defs);
-                    events.push_event(Event::Token(
-                        NodeKind::Rest,
-                        std::str::from_utf8(rest).unwrap(),
-                    ));
-                    events
-                });
+            let parser = $func.lazy();
             let presult = parser.parse($token);
             match presult.into_result() {
                 Ok(events) => Ok(events),
@@ -301,34 +273,34 @@ mod tests {
     fn test_parse() {
         let source = b"def foo \\\\ foo()";
         let tokens = lex(source).unwrap();
-        let events = parse(&tokens).unwrap().into_iter().collect::<Vec<_>>();
-        #[rustfmt::skip]
-        let expected = vec![
-            Event::Node(NodeKind::Root),
-                Event::Node(NodeKind::Def),
-                Event::Token(NodeKind::TDef, "def"),
-                Event::Token(NodeKind::TIdent, "foo"),
-                    Event::Node(NodeKind::Expr),
-                        Event::Node(NodeKind::Lambda),
-                            Event::Token(NodeKind::TBackslash, "\\"),
-                            Event::Token(NodeKind::TBackslash, "\\"),
-                                Event::Node(NodeKind::Expr),
-                                    Event::Node(NodeKind::Call),
-                                        Event::Node(NodeKind::Expr),
-                                            Event::Node(NodeKind::Ident),
-                                                Event::Token(NodeKind::TIdent, "foo"),
-                                            Event::FinNode,
-                                        Event::FinNode,
-                                        Event::Token(NodeKind::TLParen, "("),
-                                        Event::Token(NodeKind::TRParen, ")"),
-                                    Event::FinNode,
-                                Event::FinNode,
-                        Event::FinNode,
-                    Event::FinNode,
-                Event::FinNode,
-                Event::Token(NodeKind::Rest, ""),
-            Event::FinNode,
-        ];
+        let events: Vec<_> = parse(&tokens).unwrap().into_iter().collect();
+        let expected: Vec<_> = event_vec! {
+            Root {
+                Def {
+                    token(TDef, "", "def", " ");
+                    token(TIdent, "", "foo", " ");
+                    Expr {
+                        Lambda {
+                            token(TBackslash, "", "\\", "");
+                            token(TBackslash, "", "\\", " ");
+                            Expr {
+                                Call {
+                                    Expr {
+                                        Ident {
+                                            token(TIdent, "", "foo", "");
+                                        }
+                                    }
+                                    token(TLParen, "", "(", "");
+                                    token(TRParen, "", ")", "");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .into_iter()
+        .collect();
 
         assert_eq!(events, expected);
     }
@@ -337,42 +309,44 @@ mod tests {
     fn test_block_parse() {
         let source = b"[ foo() bar() ]";
         let tokens = lex(source).unwrap();
-        println!("{:?}", tokens);
-        let events = make_parse!(pblock(pexpr()), &tokens).unwrap().into_iter().collect::<Vec<_>>();
-        #[rustfmt::skip]
-        let expected = vec![
-            Event::Node(NodeKind::Block),
-                Event::Token(NodeKind::TLBracket, "["),
-                    Event::Node(NodeKind::StmtExpr),
-                        Event::Node(NodeKind::Expr),
-                            Event::Node(NodeKind::Call),
-                                Event::Node(NodeKind::Expr),
-                                    Event::Node(NodeKind::Ident),
-                                        Event::Token(NodeKind::TIdent, "foo"),
-                                    Event::FinNode,
-                                Event::FinNode,
-                                Event::Token(NodeKind::TLParen, "("),
-                                Event::Token(NodeKind::TRParen, ")"),
-                            Event::FinNode,
-                        Event::FinNode,
-                    Event::FinNode,
-                    Event::Node(NodeKind::StmtExpr),
-                        Event::Node(NodeKind::Expr),
-                            Event::Node(NodeKind::Call),
-                                Event::Node(NodeKind::Expr),
-                                    Event::Node(NodeKind::Ident),
-                                        Event::Token(NodeKind::TIdent, "bar"),
-                                    Event::FinNode,
-                                Event::FinNode,
-                                Event::Token(NodeKind::TLParen, "("),
-                                Event::Token(NodeKind::TRParen, ")"),
-                            Event::FinNode,
-                        Event::FinNode,
-                    Event::FinNode,
-                Event::Token(NodeKind::TRBracket, "]"),
-            Event::FinNode,
-            Event::Token(NodeKind::Rest, ""),
-        ];
+        let events: Vec<_> = make_parse!(pblock(pexpr()), &tokens)
+            .unwrap()
+            .into_iter()
+            .collect();
+        let expected: Vec<_> = event_vec! {
+            Block {
+                token(TLBracket, "", "[", " ");
+                StmtExpr {
+                    Expr {
+                        Call {
+                            Expr {
+                                Ident {
+                                    token(TIdent, "", "foo", "");
+                                }
+                            }
+                            token(TLParen, "", "(", "");
+                            token(TRParen, "", ")", " ");
+                        }
+                    }
+                }
+                StmtExpr {
+                    Expr {
+                        Call {
+                            Expr {
+                                Ident {
+                                    token(TIdent, "", "bar", "");
+                                }
+                            }
+                            token(TLParen, "", "(", "");
+                            token(TRParen, "", ")", " ");
+                        }
+                    }
+                }
+                token(TRBracket, "", "]", "");
+            }
+        }
+        .into_iter()
+        .collect();
         assert_eq!(events, expected);
     }
 }
