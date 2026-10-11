@@ -216,16 +216,22 @@ fn patom<'a, 'source: 'a>(
     ))
 }
 
+fn pstmt<'a, 'source: 'a>(expr: impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone + 'a) -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
+    expr.map(|expr| {
+        event_vec! {
+            vec(expr);
+        }
+    })
+}
+
 fn pblock<'a, 'source: 'a>(
     expr: impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone + 'a,
 ) -> impl Parser<'a, &'a [Token<'source>], EventVec<'source>> + Clone {
     ptlbracket()
         .then(
-            expr.map(|e| {
+            pstmt(expr).map(|e| {
                 event_vec! {
-                    StmtExpr {
-                        vec(e);
-                    }
+                    vec(e);
                 }
             })
             .repeated()
@@ -300,23 +306,19 @@ mod tests {
         let expected: Vec<_> = event_vec! {
             Block {
                 token(TLBracket, "", "[", " ");
-                StmtExpr {
-                    Call {
-                        Ident {
-                            token(TIdent, "", "foo", "");
-                        }
-                        token(TLParen, "", "(", "");
-                        token(TRParen, "", ")", " ");
+                Call {
+                    Ident {
+                        token(TIdent, "", "foo", "");
                     }
+                    token(TLParen, "", "(", "");
+                    token(TRParen, "", ")", " ");
                 }
-                StmtExpr {
-                    Call {
-                        Ident {
-                            token(TIdent, "", "bar", "");
-                        }
-                        token(TLParen, "", "(", "");
-                        token(TRParen, "", ")", " ");
+                Call {
+                    Ident {
+                        token(TIdent, "", "bar", "");
                     }
+                    token(TLParen, "", "(", "");
+                    token(TRParen, "", ")", " ");
                 }
                 token(TRBracket, "", "]", "");
             }

@@ -69,12 +69,42 @@ impl Def {
     }
 }
 
-make_ast!(StmtExpr, StmtExpr);
-impl StmtExpr {
-    pub fn expr(&self) -> Option<Expr> {
-        self.syntax().children().find_map(Expr::cast)
+#[derive(Debug, Clone)]
+pub struct Stmt(SyntaxNode);
+impl AstNode for Stmt {
+    type Language = Lang;
+
+    fn can_cast(kind: <<Stmt as AstNode>::Language as rowan::Language>::Kind) -> bool {
+        if Expr::can_cast(kind) {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn cast(node: rowan::SyntaxNode<Self::Language>) -> Option<Self> {
+        if Self::can_cast(node.kind()) {
+            Some(Self(node))
+        } else {
+            None
+        }
+    }
+
+    fn syntax(&self) -> &rowan::SyntaxNode<Self::Language> {
+        &self.0
     }
 }
+
+impl Stmt {
+    pub fn inside_kind(&self) -> NodeKind {
+        self.syntax().kind()
+    }
+
+    pub fn inside_cast<T: AstNode<Language = <Self as AstNode>::Language>>(&self) -> Option<T> {
+        T::cast(self.syntax().clone())
+    }
+}
+
 
 #[derive(Debug, Clone)]
 pub struct Expr(SyntaxNode);
@@ -118,8 +148,8 @@ impl Expr {
 
 make_ast!(Block, Block);
 impl Block {
-    pub fn stmts(&self) -> impl Iterator<Item = StmtExpr> {
-        self.syntax().children().filter_map(StmtExpr::cast)
+    pub fn stmts(&self) -> impl Iterator<Item = Stmt> {
+        self.syntax().children().filter_map(Stmt::cast)
     }
 }
 

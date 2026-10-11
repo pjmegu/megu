@@ -22,7 +22,6 @@ pub enum NodeKind {
     Def,
 
     // stmts
-    StmtExpr,
 
     // expr
     Block,
